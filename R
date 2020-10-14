@@ -1,0 +1,139 @@
+# Walmart Sales Forecasting
+# https://www.kaggle.com/c/walmart-recruiting-store-sales-forecasting/data
+
+# Predict the department-wide sales for each store
+
+# 45 stores
+
+# Some ideas:
+# Time series forecasting per store, adjust for seasonal trends
+# Mean sales between holiday and non-holiday (ANOVA)
+# Mean sales per day of the week (ANOVA)
+# Mean sales per year (ANOVA)
+# Mean sales per quarter (ANOVA)
+# Mean sales of stores (ANOVA)
+# Mean sales preceding: (1) Super Bowl, (2) Labor Day, 
+# (3) Thanksgiving, and (4) Christmas versus ordinary day (ANOVA) 
+# Time series regression of Sales adjusting for temperature,
+# CPI (inflation), Fuel price, and Unemployment rate
+
+library(foreign)
+library(tidyverse)
+library(dplyr)
+library(readr)
+library(lubridate)
+
+setwd("C:/Documents/Data Science/R Tutorial/Walmart Sales Forecasting")
+
+dfFeatures <- read_csv("features.csv")
+dfStores <- read_csv("stores.csv")
+dfTest <- read_csv("test.csv")
+dfTrain <- read_csv("train.csv")
+
+# Combine the 4 datasets
+
+# Merge Type, Size, Dept and Sales
+dfTrainStore <- merge(x=dfTrain, y=dfStores, all.x=TRUE)
+dfTestStore <- merge(x=dfTest, y=dfStores, all.x=TRUE)
+
+# Merge all the Features
+dfTrainMerged <- merge(x=dfTrainStore, y=dfFeatures, all.x=TRUE)
+dfTestMerged <- merge(x=dfTestStore, y=dfFeatures, all.x=TRUE)
+
+# Save Datasets
+write.table(x=dfTrainMerged,
+            file='trainMerged.csv',
+            sep=',', row.names=FALSE, quote=FALSE)
+write.table(x=dfTestMerged,
+            file='testMerged.csv',
+            sep=',', row.names=FALSE, quote=FALSE)
+
+# Scatterplots
+
+# Plot Weekly Sales by Holiday dummy
+ggplot(data = dfTrainMerged) + 
+  geom_point(mapping = aes(x = IsHoliday, y = Weekly_Sales)) +
+  labs(x = "Holiday", y = "Weekly Sales", title = "Is weekly sales higher on a holiday?")
+  geom_smooth(mapping = aes(x = IsHoliday, y = Weekly_Sales))
+
+# Plot Weekly Sales by Type
+ggplot(data = dfTrainMerged) + 
+  geom_point(mapping = aes(x = Type, y = Weekly_Sales)) +
+  labs(x = "Type", y = "Weekly Sales", title = "Is weekly sales higher by type?")
+  geom_smooth(mapping = aes(x = Type, y = Weekly_Sales))
+
+# Plot Weekly Sales by Size
+ggplot(data = dfTrainMerged) +
+  geom_point(mapping = aes(x = Size, y = Weekly_Sales)) +
+  labs(x = "Size", y = "Weekly Sales", title = "Is weekly sales higher by store size?")
+
+# Plot Weekly Sales by Temperature
+ggplot(data = dfTrainMerged) +
+  geom_point(mapping = aes(x = Temperature, y = Weekly_Sales)) +
+  labs(x = "Temperature", y = "Weekly Sales", title = "Is weekly sales higher the hotter it is outside?")
+
+# Plot Weekly Sales by Fuel Price
+ggplot(data = dfTrainMerged) +
+  geom_point(mapping = aes(x = Fuel_Price, y = Weekly_Sales)) +
+  labs(x = "Fuel Price", y = "Weekly Sales", title = "What about the relationship with fuel price?")
+
+# Plot Weekly Sales by CPI
+ggplot(data = dfTrainMerged) +
+  geom_point(mapping = aes(x = CPI, y = Weekly_Sales)) +
+  labs(x = "CPI", y = "Weekly Sales", title = "Sales are higher at lower CPI (inflation)?")
+
+# Plot Weekly Sales by Unemployment Rate
+ggplot(data = dfTrainMerged) +
+  geom_point(mapping = aes(x = Unemployment, y = Weekly_Sales)) +
+  labs(x = "Unemployment", y = "Weekly Sales", title = "Sales are higher at lower unemployment rates?")
+
+# Plot Weekly Sales by Dept
+ggplot(data = dfTrainMerged) +
+  geom_point(mapping = aes(x = Dept, y = Weekly_Sales)) +
+  labs(x = "Department", y = "Weekly Sales", title = "Which department performs best?")
+
+# Plot Weekly Sales by Markdown1
+ggplot(data = dfTrainMerged) +
+  geom_point(mapping = aes(x = MarkDown1, y = Weekly_Sales)) +
+  labs(x = "Markdown 1", y = "Weekly Sales", title = "Sales during Markdown 1")
+
+# Plot Weekly Sales by Markdown2
+ggplot(data = dfTrainMerged) +
+  geom_point(mapping = aes(x = MarkDown2, y = Weekly_Sales)) +
+  labs(x = "Markdown 2", y = "Weekly Sales", title = "Sales during Markdown 2")
+
+# Plot Weekly Sales by Markdown3
+ggplot(data = dfTrainMerged) +
+  geom_point(mapping = aes(x = MarkDown3, y = Weekly_Sales)) +
+  labs(x = "Markdown 3", y = "Weekly Sales", title = "Sales during Markdown 3")
+
+# Plot Weekly Sales by Markdown4
+ggplot(data = dfTrainMerged) +
+  geom_point(mapping = aes(x = MarkDown4, y = Weekly_Sales)) +
+  labs(x = "Markdown 4", y = "Weekly Sales", title = "Sales during Markdown 4")
+
+# Plot Weekly Sales by Markdown5
+ggplot(data = dfTrainMerged) +
+  geom_point(mapping = aes(x = MarkDown5, y = Weekly_Sales)) +
+  labs(x = "Markdown 5", y = "Weekly Sales", title = "Sales during Markdown 5")
+
+# Bar graph
+
+# Plot Average Sales per Store
+
+# Plot Average Sales per Dept
+
+# Correlation Matrix
+
+# Random Forest
+
+# Plot per Holiday (generate variables)
+
+# Plot per Day of the Week
+
+# Generate interaction term
+
+# Christmas
+
+# Boxplot (for Averages)
+
