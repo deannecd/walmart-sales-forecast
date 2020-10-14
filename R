@@ -6,22 +6,19 @@
 # 45 stores
 
 # Some ideas:
-# Time series forecasting per store, adjust for seasonal trends
-# Mean sales between holiday and non-holiday (ANOVA)
-# Mean sales per day of the week (ANOVA)
-# Mean sales per year (ANOVA)
-# Mean sales per quarter (ANOVA)
-# Mean sales of stores (ANOVA)
-# Mean sales preceding: (1) Super Bowl, (2) Labor Day, 
-# (3) Thanksgiving, and (4) Christmas versus ordinary day (ANOVA) 
-# Time series regression of Sales adjusting for temperature,
-# CPI (inflation), Fuel price, and Unemployment rate
+# OLS regression to get impact of promotional Mark Down events
+# Time series forecasting per store, adjust for seasonal trends, and external factors
+# Random Forest to predict sales per store
 
 library(foreign)
 library(tidyverse)
 library(dplyr)
 library(readr)
 library(lubridate)
+library(RColorBrewer)
+library(ggcorrplot)
+library(stringr)
+library(stargazer)
 
 setwd("C:/Documents/Data Science/R Tutorial/Walmart Sales Forecasting")
 
@@ -119,21 +116,103 @@ ggplot(data = dfTrainMerged) +
 
 # Bar graph
 
-# Plot Average Sales per Store
+# Plot Mean Sales per Store
 
-# Plot Average Sales per Dept
+ggplot(dfTrainMerged, aes(x = Store, y = Weekly_Sales)) +
+  stat_summary(fun.y=("mean"), geom="bar", fill="steelblue") +
+  labs(x = "Weekly Sales", y = "Store", title = "Mean Sales per Store") +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5)) +
+  scale_x_continuous(breaks=min(dfTrainMerged$Store):max(dfTrainMerged$Store), expand=c(0,0.1)) 
 
-# Correlation Matrix
+# Plot Mean Sales per Dept
+
+ggplot(dfTrainMerged, aes(x = Dept, y = Weekly_Sales)) +
+  stat_summary(fun.y=("mean"), geom="bar", fill="steelblue") +
+  labs(x = "Weekly Sales", y = "Department", title = "Mean Sales per Department") +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5)) +
+  scale_x_continuous(breaks=min(dfTrainMerged$Dept):max(dfTrainMerged$Dept), expand=c(0,0.1)) 
+
+# Create dummies
+
+dfTrainMerged$Holiday <- ifelse(dfTrainMerged$IsHoliday == 'TRUE', 1, 0)
+dfTrainMerged$NonHoliday <- ifelse(dfTrainMerged$IsHoliday == 'FALSE', 1, 0)
+dfTrainMerged$Store4 <- ifelse(dfTrainMerged$Store == '4', 1, 0)
+dfTrainMerged$Store14 <- ifelse(dfTrainMerged$Store == '14', 1, 0)
+dfTrainMerged$Store20 <- ifelse(dfTrainMerged$Store == '20', 1, 0)
+dfTrainMerged$TypeA <- ifelse(dfTrainMerged$Type == 'A', 1, 0)
+dfTrainMerged$TypeB <- ifelse(dfTrainMerged$Type == 'B', 1, 0)
+dfTrainMerged$TypeC <- ifelse(dfTrainMerged$Type == 'C', 1, 0)
+dfTrainMerged$SuperBowl10 <- ifelse(dfTrainMerged$Date == '2010-02-10', 1, 0)
+dfTrainMerged$SuperBowl11 <- ifelse(dfTrainMerged$Date == '2011-02-11', 1, 0)
+dfTrainMerged$SuperBowl12 <- ifelse(dfTrainMerged$Date == '2012-02-10', 1, 0)
+dfTrainMerged$SuperBowl13 <- ifelse(dfTrainMerged$Date == '2013-02-08', 1, 0)
+dfTrainMerged$Labor10 <- ifelse(dfTrainMerged$Date == '2010-09-10', 1, 0)
+dfTrainMerged$Labor11 <- ifelse(dfTrainMerged$Date == '2011-09-09', 1, 0)
+dfTrainMerged$Labor12 <- ifelse(dfTrainMerged$Date == '2012-09-09', 1, 0)
+dfTrainMerged$Labor13 <- ifelse(dfTrainMerged$Date == '2013-09-06', 1, 0)
+dfTrainMerged$Thanksg10 <- ifelse(dfTrainMerged$Date == '2010-11-26', 1, 0)
+dfTrainMerged$Thanksg11 <- ifelse(dfTrainMerged$Date == '2011-11-25', 1, 0)
+dfTrainMerged$Thanksg12 <- ifelse(dfTrainMerged$Date == '2012-11-23', 1, 0)
+dfTrainMerged$Thanksg13 <- ifelse(dfTrainMerged$Date == '2013-11-29', 1, 0)
+dfTrainMerged$Xmas10 <- ifelse(dfTrainMerged$Date == '2010-12-31', 1, 0)
+dfTrainMerged$Xmas11 <- ifelse(dfTrainMerged$Date == '2011-12-30', 1, 0)
+dfTrainMerged$Xmas12 <- ifelse(dfTrainMerged$Date == '2012-12-28', 1, 0)
+dfTrainMerged$Xmas13 <- ifelse(dfTrainMerged$Date == '2013-12-27', 1, 0)
+
+# Clean NAs from MarkDowns
+
+dfTrainMerged$MarkDown1[is.na(dfTrainMerged$MarkDown1)] <- 0
+dfTrainMerged$MarkDown2[is.na(dfTrainMerged$MarkDown2)] <- 0
+dfTrainMerged$MarkDown3[is.na(dfTrainMerged$MarkDown3)] <- 0
+dfTrainMerged$MarkDown4[is.na(dfTrainMerged$MarkDown4)] <- 0
+dfTrainMerged$MarkDown5[is.na(dfTrainMerged$MarkDown5)] <- 0
+
+# Clean data (retain numerical only)
+
+dropcor <- c("Date","IsHoliday", "Type", "SuperBowl10", "SuperBowl11", "SuperBowl12", "SuperBowl13", 
+             "Labor10", "Labor11", "Labor12", "Labor13",
+             "Thanksg10", "Thanksg11", "Thanksg12", "Thanksg13")
+dfTrainMerged1 = dfTrainMerged[,!(names(dfTrainMerged) %in% dropcor)]
+
+# Compute a Correlation Matrix
+
+data(dfTrainMerged1)
+corr <- round(cor(dfTrainMerged1), 1)
+head(corr[, 1:21])
+
+# Compute a matrix of correlation p-values
+p.mat <- cor_pmat(dfTrainMerged1)
+head(p.mat[, 1:21])
+
+# Visualize the correlation matrix
+
+# method = "square" (default)
+ggcorrplot(corr)
+
+# Reordering the correlation matrix
+
+# using hierarchical clustering
+ggcorrplot(corr, hc.order = TRUE, outline.col = "white")
+
+# with labels
+ggcorrplot(corr, hc.order = TRUE, outline.col = "white", lab = TRUE)
+
+# OLS Regression
+
+lm.sales <- lm(Weekly_Sales~Size+Temperature+Fuel_Price+MarkDown1+MarkDown2+MarkDown3+MarkDown4+MarkDown5+CPI+Unemployment+Holiday+Store4+Store14+Store20+TypeA+TypeB, data=dfTrainMerged1)
+summary(lm.sales)
+
+# Create beautiful tables
+
+stargazer(lm.sales, type="html", dep.var.labels=c("Weekly Sales"), 
+          covariate.labels=c("Store Size","Temperature","Fuel Price",
+                             "MarkDown1","MarkDown2", "MarkDown3", "MarkDown4", "MarkDown5", 
+                             "CPI", "Unemployment", "Holiday",  
+                             "Store4", "Store14", "Store20",
+                             "Type A", "Type B"), out="models.htm")
 
 # Random Forest
 
-# Plot per Holiday (generate variables)
-
-# Plot per Day of the Week
-
 # Generate interaction term
 
-# Christmas
-
 # Boxplot (for Averages)
-
